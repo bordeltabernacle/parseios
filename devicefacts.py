@@ -33,13 +33,6 @@ import json
 from collections import namedtuple
 
 
-HOSTNAME_REGEX = re.compile(
-        r"""
-        (?P<hostname>\S+) # capture hostname group
-        \#                # Priviliged mode CLI prompt
-        sh[ow\s]+ver.*    # show version pattern
-        """,
-        re.VERBOSE)
 SERIAL_NUMBER_REGEX = re.compile(
         r"""
         [Ss]ystem\s+[Ss]erial\s+[Nn]umber # system serial number pattern
@@ -57,67 +50,74 @@ MODEL_AND_SOFTWARE_REGEX = re.compile(
         """,
         re.VERBOSE)
 
-def fetch_hostname(text):
-    """
-    Fetches device hostname.
-
-    Args:
-        fin (str): Cisco `show` file
-
-    Returns:
-        hostname (tuple(str)): Device Hostname
-
-    Example:
-        >>> text = open('./test_data/elizabeth_cotton.txt').read()
-        >>> fetch_hostname(text)
-        ('elizabeth_cotton',)
-    """
-    hostname = (HOSTNAME_REGEX.search(text).group('hostname'),)
-    return hostname
 
 
-def fetch_serial_nums(text):
-    """
-    Fetches device serial number(s)
+class Device:
 
-    Args:
-        fin (str): Cisco show file
+    def __init__(self, _show_file):
+        self._show_file = open(_show_file).read()
+        self._hn_regex = re.compile(
+                r"""
+                (?P<hostname>\S+) # capture hostname group
+                \#                # Priviliged mode CLI prompt
+                sh[ow\s]+ver.*    # show version pattern
+                """,
+                re.VERBOSE)
 
-    Returns:
-        serial_numbers (tuple(str)): Device Serial Numbers
+    def hostname(self):
+        """
+        Fetches device hostname.
 
-    Example:
-        >>> text = open('./test_data/lightning_hopkins.txt').read()
-        >>> fetch_serial_nums(text)
-        ('ABC3333A33A', 'ABC4444A44A', 'ABC5555A555')
-    """
-    sn_matches = re.findall(SERIAL_NUMBER_REGEX, text)
-    # Use a list comprehension rather than a set as we need to keep the order
-    # the serial numbers are found in so we can accurately match them to
-    # the correct hostname
-    sn_list = []
-    [sn_list.append(item) for item in sn_matches if item not in sn_list]
-    serial_numbers = tuple(sn_list)
-    return serial_numbers
+        Args:
+            fin (str): Cisco `show` file
+
+        Returns:
+            hostname (tuple(str)): Device Hostname
+
+        Example:
+            >>> text = open('./test_data/elizabeth_cotton.txt').read()
+            >>> fetch_hostname(text)
+            ('elizabeth_cotton',)
+        """
+        return self._hn_regex.search(self._show_file).group('hostname')
 
 
-def fetch_model_sw(text):
-    """
-    Fetches model number, software version and software image.
+    def serial_numbers(self):
+        """
+        Fetches device serial number(s)
 
-    Args:
-        fin (str): Cisco show file.
+        Args:
+            fin (str): Cisco show file
 
-    Returns:
-        model_and_software (tuple(tuple(str))): Device model number, software version and software image
+        Returns:
+            serial_numbers (tuple(str)): Device Serial Numbers
 
-    Example:
-        >>> text = open('./test_data/lightning_hopkins.txt').read()
-        >>> fetch_model_sw(text)
-        (('WS-C2960X-48FPD-L', '15.0(2)EX5', 'C2960X-UNIVERSALK9-M'), ('WS-C2960X-48FPD-L', '15.0(2)EX5', 'C2960X-UNIVERSALK9-M'), ('WS-C2960X-24PD-L', '15.0(2)EX5', 'C2960X-UNIVERSALK9-M'))
-    """
-    model_and_software = tuple(re.findall(MODEL_AND_SOFTWARE_REGEX, text))
-    return model_and_software
+        Example:
+        """
+        sn_matches = re.findall(SERIAL_NUMBER_REGEX, self._show_file)
+        # Use a list comprehension rather than a set as we need to keep the order
+        # the serial numbers are found in so we can accurately match them to
+        # the correct hostname
+        sn_list = []
+        [sn_list.append(item) for item in sn_matches if item not in sn_list]
+        return sn_list
+
+
+    def model_and_software_info(self):
+        """
+        Fetches model number, software version and software image.
+
+        Args:
+            fin (str): Cisco show file.
+
+        Returns:
+            model_and_software (tuple(tuple(str))): Device model number, software version and software image
+
+        Example:
+        """
+        number_of_devices = len(self.serial_numbers())
+        total_matches = re.findall(MODEL_AND_SOFTWARE_REGEX, self._show_file)
+        return total_matches[:number_of_devices]
 
 
 def collate(directory):
