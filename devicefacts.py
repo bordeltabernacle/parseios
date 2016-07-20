@@ -122,10 +122,20 @@ class Device:
 
     def model_numbers(self):
         model_and_software_info = self._model_and_software_info()
-        model_numbers = [item[0] for item in model_and_software_info]
-        if len(model_numbers) == 1:
-            return model_numbers[0]
-        return model_numbers
+        mns = [item[0] for item in model_and_software_info]
+        return list(set(mns))
+
+
+    def software_versions(self):
+        model_and_software_info = self._model_and_software_info()
+        svs = [item[1] for item in model_and_software_info]
+        return list(set((svs)))
+
+
+    def software_images(self):
+        model_and_software_info = self._model_and_software_info()
+        sis = [item[2] for item in model_and_software_info]
+        return (list(set(sis)))
 
 
 def collate(directory):
