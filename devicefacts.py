@@ -3,9 +3,6 @@
 
 """Cisco Clerk
 
-This module contains functions to extract device attributes
-from files containing the output from Cisco switch `show` commands.
-
 Attributes:
     HOSTNAME_REGEX (str):
       Regex to extract the device hostname.
@@ -54,7 +51,8 @@ MODEL_AND_SOFTWARE_REGEX = re.compile(
 
 class Device:
 
-    def __init__(self, _show_file):
+    def __init__(self, show_file):
+        self._source_file = show_file
         self._show_file = open(_show_file).read()
         self._hn_regex = re.compile(
                 r"""
@@ -63,6 +61,9 @@ class Device:
                 sh[ow\s]+ver.*    # show version pattern
                 """,
                 re.VERBOSE)
+
+    def source(self):
+        return self._source_file
 
     def hostname(self):
         """
