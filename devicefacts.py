@@ -30,13 +30,6 @@ import json
 from collections import namedtuple
 
 
-SERIAL_NUMBER_REGEX = re.compile(
-        r"""
-        [Ss]ystem\s+[Ss]erial\s+[Nn]umber # system serial number pattern
-        \s+:\s                            # separator
-        (?P<sys_ser_num>[\w]+)            # capture serial number group
-        """,
-        re.VERBOSE)
 MODEL_AND_SOFTWARE_REGEX = re.compile(
         r"""
         (?P<model_num>[\w-]+)               # capture model number group
@@ -55,13 +48,23 @@ class Device:
         self._source_file = show_file
         self._show_file_content = open(show_file).read()
         self._hn_sh_ver_regex = re.compile(
-                r"(?P<hostname>\S+)\#sh[ow\s]+ver.*", re.IGNORECASE)
+                r"(?P<hostname>\S+)\#sh[ow\s]+ver.*",
+                re.IGNORECASE)
         self._hn_sh_inv_regex = re.compile(
-                r"(?P<hostname>\S+)\#sh[ow\s]+inv.*", re.IGNORECASE)
+                r"(?P<hostname>\S+)\#sh[ow\s]+inv.*",
+                re.IGNORECASE)
         self._hn_sh_run_regex = re.compile(
-                r"(?P<hostname>\S+)\#sh[ow\s]+run.*", re.IGNORECASE)
+                r"(?P<hostname>\S+)\#sh[ow\s]+run.*",
+                re.IGNORECASE)
         self._hn_hn_regex = re.compile(
-                r"hostname\s(?P<hostname>.*)", re.IGNORECASE)
+                r"hostname\s(?P<hostname>.*)",
+                re.IGNORECASE)
+        self._sn_regex_ssn = re.compile(
+                r"System\sSerial\sNumber\s+:\s(?P<serial_number>\w+)",
+                re.IGNORECASE)
+        self._sn_regex_sn = re.compile(
+                r"NAME:\s\"(\d|.*\Stack)\",\sDESCR:\s\"[-?\w\s?]+\"\nPID:\s[\w-]+\s+,\sVID:\s\w+\s+,\sSN:\s(?P<serial_number>\w+)",
+                re.IGNORECASE)
 
     def source(self):
         return self._source_file
@@ -79,18 +82,18 @@ class Device:
         Example:
         """
         hn_switch = {
+            "hn_hn":
+            self._hn_hn_regex.search(self._show_file_content),
             "hn_ver":
             self._hn_sh_ver_regex.search(self._show_file_content),
             "hn_inv":
             self._hn_sh_inv_regex.search(self._show_file_content),
             "hn_run":
             self._hn_sh_run_regex.search(self._show_file_content),
-            "hn_hn":
-            self._hn_hn_regex.search(self._show_file_content),
         }
-        for result in hn_switch:
-            if result != None:
-                return hn_switch.get(result).group("hostname")
+        for _, v in hn_switch.items():
+            if v:
+                return v.group("hostname")
         return "No Hostname Found"
 
     def serial_numbers(self):
@@ -105,14 +108,22 @@ class Device:
 
         Example:
         """
-        sn_matches = re.findall(SERIAL_NUMBER_REGEX, self._show_file_content)
-        # Use a list comprehension rather than a set as we need to keep the order
-        # the serial numbers are found in so we can accurately match them to
-        # the correct hostname
+        sn_switch = {
+                "sn_matches_sn": re.finditer(self._sn_regex_sn,
+                    self._show_file_content),
+                "sn_matches_ssn": re.finditer(self._sn_regex_ssn,
+                    self._show_file_content),
+        }
         sn_list = []
-        [sn_list.append(item) for item in sn_matches if item not in sn_list]
-        return sn_list
-
+        for _, v in sn_switch.items():
+            if v:
+                # Don't use a set, as we need to keep the order
+                # the serial numbers are found in so we can accurately match them to
+                # the correct device if there is a switch stack
+                [sn_list.append(m.group("serial_number")) for m in v if
+                        m.group("serial_number") not in sn_list]
+                return sn_list
+        return "No Serial Numbers Found"
 
     def _model_and_software_info(self):
         """
