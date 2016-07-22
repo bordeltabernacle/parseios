@@ -30,15 +30,6 @@ import json
 from collections import namedtuple
 
 
-MODEL_AND_SOFTWARE_REGEX = re.compile(
-        r"""
-        (?P<model_num>[\w-]+)               # capture model number group
-        \s+                                 # separator
-        (?P<sw_ver>\d{2}\.[\w\.)?(?]+)      # capture software version group
-        \s+                                 # separator
-        (?P<sw_image>\w+[-|_][\w-]+\-[\w]+) # capture software image group
-        """,
-        re.VERBOSE)
 
 
 
@@ -64,6 +55,9 @@ class Device:
                 re.IGNORECASE)
         self._sn_regex_sn = re.compile(
                 r"NAME:\s\"(\d|.*\Stack)\",\sDESCR:\s\"[-?\w\s?]+\"\nPID:\s[\w-]+\s+,\sVID:\s\w+\s+,\sSN:\s(?P<serial_number>\w+)",
+                re.IGNORECASE)
+        self.m_sw_regex = re.compile(
+                r"(?P<model_num>[\w-]+)\s+(?P<sw_ver>\d{2}\.[\w\.)?(?]+)\s+(?P<sw_image>\w+[-|_][\w-]+\-[\w]+)",
                 re.IGNORECASE)
 
     def source(self):
@@ -117,8 +111,8 @@ class Device:
         sn_list = []
         for _, v in sn_switch.items():
             if v:
-                # Don't use a set, as we need to keep the order
-                # the serial numbers are found in so we can accurately match them to
+                # Don't use a set, as we need to keep the order the serial
+                # numbers are found in so we can accurately match them to
                 # the correct device if there is a switch stack
                 [sn_list.append(m.group("serial_number")) for m in v if
                         m.group("serial_number") not in sn_list]
@@ -138,21 +132,18 @@ class Device:
         Example:
         """
         number_of_devices = len(self.serial_numbers())
-        total_matches = re.findall(MODEL_AND_SOFTWARE_REGEX, self._show_file_content)
+        total_matches = re.findall(self.m_sw_regex, self._show_file_content)
         return total_matches[:number_of_devices]
-
 
     def model_numbers(self):
         model_and_software_info = self._model_and_software_info()
         mns = [item[0] for item in model_and_software_info]
         return list(set(mns))
 
-
     def software_versions(self):
         model_and_software_info = self._model_and_software_info()
         svs = [item[1] for item in model_and_software_info]
         return list(set((svs)))
-
 
     def software_images(self):
         model_and_software_info = self._model_and_software_info()
