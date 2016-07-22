@@ -53,14 +53,15 @@ class Device:
 
     def __init__(self, show_file):
         self._source_file = show_file
-        self._show_file = open(_show_file).read()
-        self._hn_regex = re.compile(
-                r"""
-                (?P<hostname>\S+) # capture hostname group
-                \#                # Priviliged mode CLI prompt
-                sh[ow\s]+ver.*    # show version pattern
-                """,
-                re.VERBOSE)
+        self._show_file_content = open(show_file).read()
+        self._hn_sh_ver_regex = re.compile(
+                r"(?P<hostname>\S+)\#sh[ow\s]+ver.*", re.IGNORECASE)
+        self._hn_sh_inv_regex = re.compile(
+                r"(?P<hostname>\S+)\#sh[ow\s]+inv.*", re.IGNORECASE)
+        self._hn_sh_run_regex = re.compile(
+                r"(?P<hostname>\S+)\#sh[ow\s]+run.*", re.IGNORECASE)
+        self._hn_hn_regex = re.compile(
+                r"hostname\s(?P<hostname>.*)", re.IGNORECASE)
 
     def source(self):
         return self._source_file
@@ -76,13 +77,27 @@ class Device:
             hostname (tuple(str)): Device Hostname
 
         Example:
-            >>> text = open('./test_data/elizabeth_cotton.txt').read()
-            >>> fetch_hostname(text)
-            ('elizabeth_cotton',)
         """
-        return self._hn_regex.search(self._show_file).group('hostname')
-
-
+        hn_switch = {
+            "hn_ver":
+            self._hn_sh_ver_regex.search(self._show_file_content),
+            "hn_inv":
+            self._hn_sh_inv_regex.search(self._show_file_content),
+            "hn_run":
+            self._hn_sh_run_regex.search(self._show_file_content),
+            "hn_hn":
+            self._hn_hn_regex.search(self._show_file_content),
+        }
+        if hn_switch.get("hn_hn") != None:
+            return hn_switch.get("hn_hn").group("hostname")
+        elif hn_switch.get("hn_ver") != None:
+            return hn_switch.get("hn_ver").group("hostname")
+        elif hn_switch.get("hn_inv") != None:
+            return hn_switch.get("hn_inv").group("hostname")
+        elif hn_switch.get("hn_run") != None:
+            return hn_switch.get("hn_run").group("hostname")
+        else:
+            return "No Hostname Found"
     def serial_numbers(self):
         """
         Fetches device serial number(s)
@@ -95,7 +110,7 @@ class Device:
 
         Example:
         """
-        sn_matches = re.findall(SERIAL_NUMBER_REGEX, self._show_file)
+        sn_matches = re.findall(SERIAL_NUMBER_REGEX, self._show_file_content)
         # Use a list comprehension rather than a set as we need to keep the order
         # the serial numbers are found in so we can accurately match them to
         # the correct hostname
@@ -117,7 +132,7 @@ class Device:
         Example:
         """
         number_of_devices = len(self.serial_numbers())
-        total_matches = re.findall(MODEL_AND_SOFTWARE_REGEX, self._show_file)
+        total_matches = re.findall(MODEL_AND_SOFTWARE_REGEX, self._show_file_content)
         return total_matches[:number_of_devices]
 
 
