@@ -88,16 +88,11 @@ class Device:
             "hn_hn":
             self._hn_hn_regex.search(self._show_file_content),
         }
-        if hn_switch.get("hn_hn") != None:
-            return hn_switch.get("hn_hn").group("hostname")
-        elif hn_switch.get("hn_ver") != None:
-            return hn_switch.get("hn_ver").group("hostname")
-        elif hn_switch.get("hn_inv") != None:
-            return hn_switch.get("hn_inv").group("hostname")
-        elif hn_switch.get("hn_run") != None:
-            return hn_switch.get("hn_run").group("hostname")
-        else:
-            return "No Hostname Found"
+        for result in hn_switch:
+            if result != None:
+                return hn_switch.get(result).group("hostname")
+        return "No Hostname Found"
+
     def serial_numbers(self):
         """
         Fetches device serial number(s)
