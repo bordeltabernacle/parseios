@@ -83,7 +83,7 @@ class Device:
         elif self.serial_numbers():
             return len(self.serial_numbers())
         else:
-            return "Cannot retrieve device count at this time"
+            return None
 
     def hostname(self):
         """
@@ -110,7 +110,8 @@ class Device:
         for _, v in hn_switch.items():
             if v:
                 return v.group("hostname")
-        return "No Hostname Found"
+            else:
+                return None
 
     def serial_numbers(self):
         """
@@ -139,7 +140,8 @@ class Device:
                 [sn_list.append(m.group("serial_number")) for m in v if
                         m.group("serial_number") not in sn_list]
                 return sn_list
-        return "No Serial Numbers Found"
+            else:
+                return None
 
     def _model_and_software_info(self):
         """
@@ -154,7 +156,10 @@ class Device:
         Example:
         """
         total_matches = re.findall(self._m_sw_regex, self._show_file_content)
-        return total_matches[:self.device_count()]
+        if total_matches:
+            return total_matches[:self.device_count()]
+        else:
+            return None
 
     def model_numbers(self):
         mn_switch = {
@@ -167,16 +172,22 @@ class Device:
         for _, v in mn_switch.items():
             if v:
                 return list(set(v))
+            else:
+                return None
 
     def software_versions(self):
-        model_and_software_info = self._model_and_software_info()
-        svs = [item[1] for item in model_and_software_info]
-        return list(set((svs)))
+        svs = [item[1] for item in self._model_and_software_info()]
+        if svs:
+            return list(set((svs)))
+        else:
+            return None
 
     def software_images(self):
-        model_and_software_info = self._model_and_software_info()
-        sis = [item[2] for item in model_and_software_info]
-        return (list(set(sis)))
+        sis = [item[2] for item in self._model_and_software_info()]
+        if sis:
+            return (list(set(sis)))
+        else:
+            return None
 
 
 def collate(directory):
