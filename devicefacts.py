@@ -30,9 +30,6 @@ import json
 from collections import namedtuple
 
 
-
-
-
 class Device:
 
     def __init__(self, show_file):
@@ -59,9 +56,32 @@ class Device:
         self.m_sw_regex = re.compile(
                 r"(?P<model_num>[\w-]+)\s+(?P<sw_ver>\d{2}\.[\w\.)?(?]+)\s+(?P<sw_image>\w+[-|_][\w-]+\-[\w]+)",
                 re.IGNORECASE)
+        self.mn_regex = re.compile(
+                r"model\snumber\s+:\s(?P<model_number>[\w-]+)",
+                re.IGNORECASE)
+        self._interface_regex = re.compile(
+                r"interface\sfastethernet(\d)\/\d",
+                re.IGNORECASE
+                )
+        self._inv_name_regex = re.compile(
+                r"name:\s\"(\d)\"",
+                re.IGNORECASE
+                )
 
     def source(self):
         return self._source_file
+
+    def device_count(self):
+        interface_slots = re.findall(self._interface_regex,
+                self._show_file_content)
+        inv_names = re.findall(self._inv_name_regex, self._show_file_content)
+        if interface_slots:
+            return int(max(interface_slots)) + 1
+        if inv_names:
+            return int(max(inv_names))
+        if self.serial_numbers():
+            return len(self.serial_numbers())
+        return "Cannot retrieve device count at this time"
 
     def hostname(self):
         """
@@ -131,9 +151,8 @@ class Device:
 
         Example:
         """
-        number_of_devices = len(self.serial_numbers())
         total_matches = re.findall(self.m_sw_regex, self._show_file_content)
-        return total_matches[:number_of_devices]
+        return total_matches[:self.device_count()]
 
     def model_numbers(self):
         model_and_software_info = self._model_and_software_info()
