@@ -53,20 +53,21 @@ class Device:
         self._sn_regex_sn = re.compile(
                 r"NAME:\s\"(\d|.*\Stack)\",\sDESCR:\s\"[-?\w\s?]+\"\nPID:\s[\w-]+\s+,\sVID:\s\w+\s+,\sSN:\s(?P<serial_number>\w+)",
                 re.IGNORECASE)
-        self.m_sw_regex = re.compile(
+        self._m_sw_regex = re.compile(
                 r"(?P<model_num>[\w-]+)\s+(?P<sw_ver>\d{2}\.[\w\.)?(?]+)\s+(?P<sw_image>\w+[-|_][\w-]+\-[\w]+)",
                 re.IGNORECASE)
-        self.mn_regex = re.compile(
+        self._mn_regex = re.compile(
                 r"model\snumber\s+:\s(?P<model_number>[\w-]+)",
+                re.IGNORECASE)
+        self._inv_mn_regex = re.compile(
+                r"NAME:\s\"[\w\s]*\d\",\sDESCR:\s\"([-\w]+)",
                 re.IGNORECASE)
         self._interface_regex = re.compile(
                 r"interface\sfastethernet(\d)\/\d",
-                re.IGNORECASE
-                )
+                re.IGNORECASE)
         self._inv_name_regex = re.compile(
                 r"name:\s\"(\d)\"",
-                re.IGNORECASE
-                )
+                re.IGNORECASE)
 
     def source(self):
         return self._source_file
@@ -77,11 +78,12 @@ class Device:
         inv_names = re.findall(self._inv_name_regex, self._show_file_content)
         if interface_slots:
             return int(max(interface_slots)) + 1
-        if inv_names:
+        elif inv_names:
             return int(max(inv_names))
-        if self.serial_numbers():
+        elif self.serial_numbers():
             return len(self.serial_numbers())
-        return "Cannot retrieve device count at this time"
+        else:
+            return "Cannot retrieve device count at this time"
 
     def hostname(self):
         """
@@ -151,13 +153,20 @@ class Device:
 
         Example:
         """
-        total_matches = re.findall(self.m_sw_regex, self._show_file_content)
+        total_matches = re.findall(self._m_sw_regex, self._show_file_content)
         return total_matches[:self.device_count()]
 
     def model_numbers(self):
-        model_and_software_info = self._model_and_software_info()
-        mns = [item[0] for item in model_and_software_info]
-        return list(set(mns))
+        mn_switch = {
+                "mns": (item[0] for item in self._model_and_software_info()),
+                "sh_ver_mns": re.findall(self._mn_regex,
+                    self._show_file_content),
+                "sh_inv_mns": re.findall(self._inv_mn_regex,
+                    self._show_file_content)
+        }
+        for _, v in mn_switch.items():
+            if v:
+                return list(set(v))
 
     def software_versions(self):
         model_and_software_info = self._model_and_software_info()
