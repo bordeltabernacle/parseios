@@ -149,20 +149,17 @@ class Device:
             return None
 
     def facts(self):
-        device_list = []
-        Device = namedtuple("Device",
-                            """hostname
-                               serial_number
-                               model_number
-                               software_version
-                               software_image""")
+        details_list = []
+        Host = namedtuple("Host", "hostname count details")
+        Details = namedtuple("Details",
+                """serial_number model_number software_version software_image""")
         for i in range(self.device_count()):
-            device_list.append(Device(self.hostname(),
+            details_list.append(Details(
                 self.serial_numbers()[i],
                 self._model_and_software_info()[i][0],
                 self._model_and_software_info()[i][1],
                 self._model_and_software_info()[i][2]))
-        return device_list
+        return Host(self.hostname(), self.device_count(), tuple(details_list))
 
 
 
