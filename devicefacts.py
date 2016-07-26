@@ -59,7 +59,6 @@ class Device:
                 r"(?P<model_num>[\w-]+)\s+(?P<sw_ver>\d{2}\.[\w\.)?(?]+)\s+(?P<sw_image>\w+[-|_][\w-]+\-[\w]+)"),
         }
 
-
     def _content(self):
         with open(self._source_file) as sf:
             return sf.read()
@@ -148,6 +147,23 @@ class Device:
             return (list(set(sis)))
         else:
             return None
+
+    def facts(self):
+        device_list = []
+        Device = namedtuple("Device",
+                            """hostname
+                               serial_number
+                               model_number
+                               software_version
+                               software_image""")
+        for i in range(self.device_count()):
+            device_list.append(Device(self.hostname(),
+                self.serial_numbers()[i],
+                self._model_and_software_info()[i][0],
+                self._model_and_software_info()[i][1],
+                self._model_and_software_info()[i][2]))
+        return device_list
+
 
 
 def collate(directory):
