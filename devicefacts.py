@@ -34,7 +34,6 @@ class Device:
 
     def __init__(self, show_file):
         self._source_file = show_file
-        self._show_file_content = open(show_file).read()
         self._hn_sh_ver_regex = re.compile(
                 r"(?P<hostname>\S+)\#sh[ow\s]+ver.*",
                 re.IGNORECASE)
@@ -69,13 +68,17 @@ class Device:
                 r"name:\s\"(\d)\"",
                 re.IGNORECASE)
 
+    def _content(self):
+        with open(self._source_file) as sf:
+            return sf.read()
+
     def source(self):
         return self._source_file
 
     def device_count(self):
         interface_slots = re.findall(self._interface_regex,
-                self._show_file_content)
-        inv_names = re.findall(self._inv_name_regex, self._show_file_content)
+                self._content())
+        inv_names = re.findall(self._inv_name_regex, self._content())
         if interface_slots:
             return int(max(interface_slots)) + 1
         elif inv_names:
@@ -99,13 +102,13 @@ class Device:
         """
         hn_switch = {
             "hn_hn":
-            self._hn_hn_regex.search(self._show_file_content),
+            self._hn_hn_regex.search(self._content()),
             "hn_ver":
-            self._hn_sh_ver_regex.search(self._show_file_content),
+            self._hn_sh_ver_regex.search(self._content()),
             "hn_inv":
-            self._hn_sh_inv_regex.search(self._show_file_content),
+            self._hn_sh_inv_regex.search(self._content()),
             "hn_run":
-            self._hn_sh_run_regex.search(self._show_file_content),
+            self._hn_sh_run_regex.search(self._content()),
         }
         for _, v in hn_switch.items():
             if v:
@@ -127,9 +130,9 @@ class Device:
         """
         sn_switch = {
                 "sn_matches_sn": re.finditer(self._sn_regex_sn,
-                    self._show_file_content),
+                    self._content()),
                 "sn_matches_ssn": re.finditer(self._sn_regex_ssn,
-                    self._show_file_content),
+                    self._content()),
         }
         sn_list = []
         for _, v in sn_switch.items():
@@ -155,7 +158,7 @@ class Device:
 
         Example:
         """
-        total_matches = re.findall(self._m_sw_regex, self._show_file_content)
+        total_matches = re.findall(self._m_sw_regex, self._content())
         if total_matches:
             return total_matches[:self.device_count()]
         else:
@@ -165,9 +168,9 @@ class Device:
         mn_switch = {
                 "mns": (item[0] for item in self._model_and_software_info()),
                 "sh_ver_mns": re.findall(self._mn_regex,
-                    self._show_file_content),
+                    self._content()),
                 "sh_inv_mns": re.findall(self._inv_mn_regex,
-                    self._show_file_content)
+                    self._content())
         }
         for _, v in mn_switch.items():
             if v:
