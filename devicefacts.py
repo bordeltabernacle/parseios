@@ -150,7 +150,7 @@ class Device:
 
     def facts(self):
         details_list = []
-        Host = namedtuple("Host", "hostname count details")
+        Host = namedtuple("Host", "hostname device_count details")
         Details = namedtuple("Details",
                 """serial_number model_number software_version software_image""")
         for i in range(self.device_count()):
@@ -162,49 +162,11 @@ class Device:
         return Host(self.hostname(), self.device_count(), tuple(details_list))
 
 
-
 def collate(directory):
-    """
-    Creates a list of named tuples. Each named tuple contains the
-    hostname, serial number, model number, software version and
-    software image for each device within the `show` files
-    within the given directory.
-
-    Args:
-        directory (str): Directory containing the Cisco show files
-
-    Returns:
-        devices (tuple(Device(str))): tuple of named tuples containing device attributes
-
-    Example:
-        >>> collate('./test_data')
-        (Device(hostname='elizabeth_cotton', serial_number='ANC1111A1AB', model_number='WS-C2960C-8PC-L', software_version='15.0(2)SE5', software_image='C2960c405-UNIVERSALK9-M'), Device(hostname='howlin_wolf', serial_number='ABC2222A2AB', model_number='WS-C2960C-8PC-L', software_version='15.0(2)SE5', software_image='C2960c405-UNIVERSALK9-M'), Device(hostname='lightning_hopkins', serial_number='ABC3333A33A', model_number='WS-C2960X-48FPD-L', software_version='15.0(2)EX5', software_image='C2960X-UNIVERSALK9-M'), Device(hostname='lightning_hopkins', serial_number='ABC4444A44A', model_number='WS-C2960X-48FPD-L', software_version='15.0(2)EX5', software_image='C2960X-UNIVERSALK9-M'), Device(hostname='lightning_hopkins', serial_number='ABC5555A555', model_number='WS-C2960X-24PD-L', software_version='15.0(2)EX5', software_image='C2960X-UNIVERSALK9-M'), Device(hostname='sister_rosetta_tharpe', serial_number='ABC6666A6AB', model_number='WS-C3650-24TD', software_version='03.03.03SE', software_image='cat3k_caa-universalk9'))
-    """
     device_list = []
-    Device = namedtuple('Device',
-                        '''hostname
-                           serial_number
-                           model_number
-                           software_version
-                           software_image''')
     for fin in sorted(os.listdir(directory)):
-        with open(os.path.join(directory, fin)) as show_f:
-            content = show_f.read()
-            hostname = fetch_hostname(content)
-            serial_numbers = fetch_serial_nums(content)
-            model_sw_result = fetch_model_sw(content)
-            i = 0
-            while i < len(serial_numbers):
-                device_list.append(
-                    Device(
-                        hostname[0],
-                        serial_numbers[i],
-                        model_sw_result[i][0],
-                        model_sw_result[i][1],
-                        model_sw_result[i][2]))
-                i += 1
-    devices = tuple(device_list)
-    return devices
+        device_list.append(Device(os.path.join(directory, fin)).facts())
+    return device_list
 
 
 def csv_inventory(collated_records):
