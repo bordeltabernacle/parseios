@@ -34,39 +34,31 @@ class Device:
 
     def __init__(self, show_file):
         self._source_file = show_file
-        self._hn_sh_ver_regex = re.compile(
-                r"(?P<hostname>\S+)\#sh[ow\s]+ver.*",
-                re.IGNORECASE)
-        self._hn_sh_inv_regex = re.compile(
-                r"(?P<hostname>\S+)\#sh[ow\s]+inv.*",
-                re.IGNORECASE)
-        self._hn_sh_run_regex = re.compile(
-                r"(?P<hostname>\S+)\#sh[ow\s]+run.*",
-                re.IGNORECASE)
-        self._hn_hn_regex = re.compile(
-                r"hostname\s(?P<hostname>.*)",
-                re.IGNORECASE)
-        self._sn_regex_ssn = re.compile(
-                r"System\sSerial\sNumber\s+:\s(?P<serial_number>\w+)",
-                re.IGNORECASE)
-        self._sn_regex_sn = re.compile(
-                r"NAME:\s\"(\d|.*\Stack)\",\sDESCR:\s\"[-?\w\s?]+\"\nPID:\s[\w-]+\s+,\sVID:\s\w+\s+,\sSN:\s(?P<serial_number>\w+)",
-                re.IGNORECASE)
-        self._m_sw_regex = re.compile(
-                r"(?P<model_num>[\w-]+)\s+(?P<sw_ver>\d{2}\.[\w\.)?(?]+)\s+(?P<sw_image>\w+[-|_][\w-]+\-[\w]+)",
-                re.IGNORECASE)
-        self._mn_regex = re.compile(
-                r"model\snumber\s+:\s(?P<model_number>[\w-]+)",
-                re.IGNORECASE)
-        self._inv_mn_regex = re.compile(
-                r"NAME:\s\"[\w\s]*\d\",\sDESCR:\s\"([-\w]+)",
-                re.IGNORECASE)
-        self._interface_regex = re.compile(
-                r"interface\sfastethernet(\d)\/\d",
-                re.IGNORECASE)
-        self._inv_name_regex = re.compile(
-                r"name:\s\"(\d)\"",
-                re.IGNORECASE)
+
+    def _build_regex(self, regex):
+        return re.compile(regex, re.IGNORECASE)
+
+    def _regexes(self):
+        return {
+            "hn_sh_ver": self._build_regex(r"(?P<hostname>\S+)\#sh[ow\s]+ver.*"),
+            "hn_sh_inv": self._build_regex(r"(?P<hostname>\S+)\#sh[ow\s]+inv.*"),
+            "hn_sh_run": self._build_regex(r"(?P<hostname>\S+)\#sh[ow\s]+run.*"),
+            "hn_hn": self._build_regex(r"hostname\s(?P<hostname>.*)"),
+            "mn": self._build_regex(r"model\snumber\s+:\s(?P<model_number>[\w-]+)"),
+            "inv_mn": self._build_regex(r"NAME:\s\"[\w\s]*\d\",\sDESCR:\s\"([-\w]+)"),
+            "interface": self._build_regex(r"interface\sfastethernet(\d)\/\d"),
+            "inv_name": self._build_regex(r"name:\s\"(\d)\""),
+            "sn_ssn":
+            self._build_regex(
+                r"System\sSerial\sNumber\s+:\s(?P<serial_number>\w+)"),
+            "sn_sn":
+            self._build_regex(
+                r"NAME:\s\"(\d|.*\Stack)\",\sDESCR:\s\"[-?\w\s?]+\"\nPID:\s[\w-]+\s+,\sVID:\s\w+\s+,\sSN:\s(?P<serial_number>\w+)"),
+            "m_sw":
+            self._build_regex(
+                r"(?P<model_num>[\w-]+)\s+(?P<sw_ver>\d{2}\.[\w\.)?(?]+)\s+(?P<sw_image>\w+[-|_][\w-]+\-[\w]+)"),
+        }
+
 
     def _content(self):
         with open(self._source_file) as sf:
@@ -76,9 +68,9 @@ class Device:
         return self._source_file
 
     def device_count(self):
-        interface_slots = re.findall(self._interface_regex,
+        interface_slots = re.findall(self._regexes()["interface"],
                 self._content())
-        inv_names = re.findall(self._inv_name_regex, self._content())
+        inv_names = re.findall(self._regexes()["inv_name"], self._content())
         if interface_slots:
             return int(max(interface_slots)) + 1
         elif inv_names:
@@ -88,105 +80,70 @@ class Device:
         else:
             return None
 
+    def _regex_search(self, key):
+        return self._regexes()[key].search(self._content())
+
+    def _regex_finditer(self, key):
+        return re.finditer(self._regexes()[key], self._content())
+
+    def _regex_findall(self, key):
+        return re.findall(self._regexes()[key], self._content())
+
     def hostname(self):
-        """
-        Fetches device hostname.
-
-        Args:
-            fin (str): Cisco `show` file
-
-        Returns:
-            hostname (tuple(str)): Device Hostname
-
-        Example:
-        """
-        hn_switch = {
-            "hn_hn":
-            self._hn_hn_regex.search(self._content()),
-            "hn_ver":
-            self._hn_sh_ver_regex.search(self._content()),
-            "hn_inv":
-            self._hn_sh_inv_regex.search(self._content()),
-            "hn_run":
-            self._hn_sh_run_regex.search(self._content()),
-        }
-        for _, v in hn_switch.items():
-            if v:
-                return v.group("hostname")
-            else:
-                return None
+        matches = [
+            self._regex_search("hn_hn"),
+            self._regex_search("hn_sh_ver"),
+            self._regex_search("hn_sh_inv"),
+            self._regex_search("hn_sh_run"),
+        ]
+        for match in matches:
+            if match:
+                return match.group("hostname")
+        return None
 
     def serial_numbers(self):
-        """
-        Fetches device serial number(s)
-
-        Args:
-            fin (str): Cisco show file
-
-        Returns:
-            serial_numbers (tuple(str)): Device Serial Numbers
-
-        Example:
-        """
-        sn_switch = {
-                "sn_matches_sn": re.finditer(self._sn_regex_sn,
-                    self._content()),
-                "sn_matches_ssn": re.finditer(self._sn_regex_ssn,
-                    self._content()),
-        }
+        matches = [
+            self._regex_finditer("sn_sn"),
+            self._regex_finditer("sn_ssn"),
+        ]
         sn_list = []
-        for _, v in sn_switch.items():
-            if v:
+        for match in matches:
+            if match:
                 # Don't use a set, as we need to keep the order the serial
                 # numbers are found in so we can accurately match them to
                 # the correct device if there is a switch stack
-                [sn_list.append(m.group("serial_number")) for m in v if
+                [sn_list.append(m.group("serial_number")) for m in match if
                         m.group("serial_number") not in sn_list]
                 return sn_list
-            else:
-                return None
+        return None
 
     def _model_and_software_info(self):
-        """
-        Fetches model number, software version and software image.
-
-        Args:
-            fin (str): Cisco show file.
-
-        Returns:
-            model_and_software (tuple(tuple(str))): Device model number, software version and software image
-
-        Example:
-        """
-        total_matches = re.findall(self._m_sw_regex, self._content())
-        if total_matches:
-            return total_matches[:self.device_count()]
+        matches = self._regex_findall("m_sw")
+        if matches:
+            return matches[:self.device_count()]
         else:
             return None
 
     def model_numbers(self):
-        mn_switch = {
-                "mns": (item[0] for item in self._model_and_software_info()),
-                "sh_ver_mns": re.findall(self._mn_regex,
-                    self._content()),
-                "sh_inv_mns": re.findall(self._inv_mn_regex,
-                    self._content())
-        }
-        for _, v in mn_switch.items():
-            if v:
-                return list(set(v))
-            else:
-                return None
+        matches = [
+            (i[0] for i in self._model_and_software_info()),
+            self._regex_findall("mn"),
+            self._regex_findall("inv_mn")
+        ]
+        for match in matches:
+            if match:
+                return list(set(match))
+        return None
 
     def software_versions(self):
-        svs = [item[1] for item in self._model_and_software_info()]
+        svs = [i[1] for i in self._model_and_software_info()]
         if svs:
             return list(set((svs)))
         else:
             return None
 
     def software_images(self):
-        sis = [item[2] for item in self._model_and_software_info()]
+        sis = [i[2] for i in self._model_and_software_info()]
         if sis:
             return (list(set(sis)))
         else:
