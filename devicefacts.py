@@ -161,6 +161,9 @@ class Device:
                 self._model_and_software_info()[i][2]))
         return Host(self.hostname(), self.device_count(), tuple(details_list))
 
+    def __repr__(self):
+        return self.hostname()
+
 
 def collate(directory):
     device_list = []
