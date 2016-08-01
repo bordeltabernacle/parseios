@@ -30,7 +30,7 @@ import json
 from collections import namedtuple
 
 
-class Device:
+class Host:
 
     def __init__(self, show_file):
         self._source_file = show_file
@@ -149,17 +149,17 @@ class Device:
             return None
 
     def facts(self):
-        details_list = []
-        Host = namedtuple("Host", "hostname device_count details")
-        Details = namedtuple("Details",
+        device_list = []
+        Host = namedtuple("Host", "hostname device_count devices")
+        Device = namedtuple("Device",
                 """serial_number model_number software_version software_image""")
         for i in range(self.device_count()):
-            details_list.append(Details(
+            device_list.append(Device(
                 self.serial_numbers()[i],
                 self._model_and_software_info()[i][0],
                 self._model_and_software_info()[i][1],
                 self._model_and_software_info()[i][2]))
-        return Host(self.hostname(), self.device_count(), tuple(details_list))
+        return Host(self.hostname(), self.device_count(), tuple(device_list))
 
     def __repr__(self):
         return self.hostname()
