@@ -148,9 +148,8 @@ class Host:
         else:
             return None
 
-    def facts(self):
+    def devices(self):
         device_list = []
-        Host = namedtuple("Host", "hostname device_count devices")
         Device = namedtuple("Device",
                 """serial_number model_number software_version software_image""")
         for i in range(self.device_count()):
@@ -159,7 +158,12 @@ class Host:
                 self._model_and_software_info()[i][0],
                 self._model_and_software_info()[i][1],
                 self._model_and_software_info()[i][2]))
-        return Host(self.hostname(), self.device_count(), tuple(device_list))
+        return tuple(device_list)
+
+
+    def facts(self):
+        Host = namedtuple("Host", "hostname device_count devices")
+        return Host(self.hostname(), self.device_count(), self.devices())
 
     def __repr__(self):
         return self.hostname()
