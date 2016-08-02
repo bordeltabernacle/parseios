@@ -160,13 +160,19 @@ class Host:
                 self._model_and_software_info()[i][2]))
         return tuple(device_list)
 
-
     def facts(self):
         Host = namedtuple("Host", "hostname device_count devices")
         return Host(self.hostname(), self.device_count(), self.devices())
 
-    def __repr__(self):
-        return self.hostname()
+    def __str__(self):
+        s = self.hostname()
+        for i in range(self.device_count()):
+            s += "\n{0}\t{1}\t{2}\t{3}".format(
+                    self.devices()[i].serial_number,
+                    self.devices()[i].model_number,
+                    self.devices()[i].software_version,
+                    self.devices()[i].software_image)
+        return s
 
 
 def collate(directory):
