@@ -170,10 +170,8 @@ class Host:
 
 
 def collate(directory):
-    device_list = []
-    for fin in sorted(os.listdir(directory)):
-        device_list.append(Device(os.path.join(directory, fin)).facts())
-    return device_list
+    return [Host(os.path.join(directory, fin)).facts() for fin in
+            sorted(os.listdir(directory))]
 
 
 def csv_inventory(collated_records):
