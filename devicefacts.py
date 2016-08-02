@@ -30,6 +30,9 @@ import json
 from collections import namedtuple
 
 
+DEVICE_FIELDS = "serial_number model_number software_version software_image"
+
+
 class Host:
 
     def __init__(self, show_file):
@@ -154,8 +157,7 @@ class Host:
 
     def devices(self):
         device_list = []
-        Device = namedtuple("Device",
-                """serial_number model_number software_version software_image""")
+        Device = namedtuple("Device", DEVICE_FIELDS)
         for i in range(self.device_count()):
             device_list.append(Device(
                 self.serial_numbers()[i],
@@ -178,26 +180,27 @@ class Inventory:
         return [Host(os.path.join(self.directory, fin)).facts() for fin in
                 sorted(os.listdir(self.directory))]
 
+    def csv(self):
+        headers = "hostname," + ','.join(DEVICE_FIELDS.split())
+        rows = ""
+        for host in self.collate():
+            i = 0
+            rows += host.hostname
+            rows += ","
+            for device in host.devices:
+                if i > 0:
+                    rows += ","
+                rows += device.serial_number
+                rows += ","
+                rows += device.model_number
+                rows += ","
+                rows += device.software_version
+                rows += ","
+                rows += device.software_image
+                rows += "\n"
+                i += 1
+        return rows
 
-def csv_inventory(collated_records):
-    """
-    Creates a CSV formatted string containing Cisco device attributes from
-    a given list of named tuples.
-
-    Args:
-        collated_records (iter(Device(str))): iterable of named tuples.
-
-    Returns:
-        output (str): CSV formatted string
-
-    Example:
-        >>> csv_inventory(collate('./test_data'))
-        'hostname,serial_number,model_number,software_version,software_image\\nelizabeth_cotton,ANC1111A1AB,WS-C2960C-8PC-L,15.0(2)SE5,C2960c405-UNIVERSALK9-M\\nhowlin_wolf,ABC2222A2AB,WS-C2960C-8PC-L,15.0(2)SE5,C2960c405-UNIVERSALK9-M\\nlightning_hopkins,ABC3333A33A,WS-C2960X-48FPD-L,15.0(2)EX5,C2960X-UNIVERSALK9-M\\nlightning_hopkins,ABC4444A44A,WS-C2960X-48FPD-L,15.0(2)EX5,C2960X-UNIVERSALK9-M\\nlightning_hopkins,ABC5555A555,WS-C2960X-24PD-L,15.0(2)EX5,C2960X-UNIVERSALK9-M\\nsister_rosetta_tharpe,ABC6666A6AB,WS-C3650-24TD,03.03.03SE,cat3k_caa-universalk9'
-    """
-    headers = ','.join(list(collated_records[0]._fields))
-    rows = [','.join(list(record)) for record in collated_records]
-    content = '{0}\n{1}'.format(headers, '\n'.join(rows))
-    return content
 
 
 def json_inventory(collated_records):
