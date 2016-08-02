@@ -184,34 +184,16 @@ class Inventory:
         headers = "hostname," + ','.join(DEVICE_FIELDS.split()) + "\n"
         for host in self.collate():
             i = 0
-            headers += host.hostname
-            headers += ","
+            headers += host.hostname + ","
             for device in host.devices:
                 if i > 0:
                     headers += ","
-                headers += ",".join(device)
-                headers += "\n"
+                headers += ",".join(device) + "\n"
                 i += 1
         return headers
 
-        # return "\n".join("\t".join(d) for d in self.devices())
-
 
 def json_inventory(collated_records):
-    """
-    Creates a JSON formatted string containing Cisco device attributes from
-    a given list of named tuples.
-
-    Args:
-        collated_records (iter(Device(str))): iterable of named tuples.
-
-    Returns:
-        output (str): JSON formatted string
-
-    Example:
-        >>> json_inventory(collate('./test_data'))
-        '[{"software_image": "C2960c405-UNIVERSALK9-M", "serial_number": "ANC1111A1AB", "model_number": "WS-C2960C-8PC-L", "software_version": "15.0(2)SE5", "hostname": "elizabeth_cotton"}, {"software_image": "C2960c405-UNIVERSALK9-M", "serial_number": "ABC2222A2AB", "model_number": "WS-C2960C-8PC-L", "software_version": "15.0(2)SE5", "hostname": "howlin_wolf"}, {"software_image": "C2960X-UNIVERSALK9-M", "serial_number": "ABC3333A33A", "model_number": "WS-C2960X-48FPD-L", "software_version": "15.0(2)EX5", "hostname": "lightning_hopkins"}, {"software_image": "C2960X-UNIVERSALK9-M", "serial_number": "ABC4444A44A", "model_number": "WS-C2960X-48FPD-L", "software_version": "15.0(2)EX5", "hostname": "lightning_hopkins"}, {"software_image": "C2960X-UNIVERSALK9-M", "serial_number": "ABC5555A555", "model_number": "WS-C2960X-24PD-L", "software_version": "15.0(2)EX5", "hostname": "lightning_hopkins"}, {"software_image": "cat3k_caa-universalk9", "serial_number": "ABC6666A6AB", "model_number": "WS-C3650-24TD", "software_version": "03.03.03SE", "hostname": "sister_rosetta_tharpe"}]'
-    """
     dict_records = [__named_tuple_to_dict(record) for record in collated_records]
     return json.dumps(dict_records)
 
