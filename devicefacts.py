@@ -181,26 +181,20 @@ class Inventory:
                 sorted(os.listdir(self.directory))]
 
     def csv(self):
-        headers = "hostname," + ','.join(DEVICE_FIELDS.split())
-        rows = ""
+        headers = "hostname," + ','.join(DEVICE_FIELDS.split()) + "\n"
         for host in self.collate():
             i = 0
-            rows += host.hostname
-            rows += ","
+            headers += host.hostname
+            headers += ","
             for device in host.devices:
                 if i > 0:
-                    rows += ","
-                rows += device.serial_number
-                rows += ","
-                rows += device.model_number
-                rows += ","
-                rows += device.software_version
-                rows += ","
-                rows += device.software_image
-                rows += "\n"
+                    headers += ","
+                headers += ",".join(device)
+                headers += "\n"
                 i += 1
-        return rows
+        return headers
 
+        # return "\n".join("\t".join(d) for d in self.devices())
 
 
 def json_inventory(collated_records):
