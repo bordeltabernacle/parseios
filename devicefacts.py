@@ -169,9 +169,14 @@ class Host:
         return Host(self.hostname(), self.device_count(), self.devices())
 
 
-def collate(directory):
-    return [Host(os.path.join(directory, fin)).facts() for fin in
-            sorted(os.listdir(directory))]
+class Inventory:
+
+    def __init__(self, directory):
+        self.directory = directory
+
+    def collate(self):
+        return [Host(os.path.join(self.directory, fin)).facts() for fin in
+                sorted(os.listdir(self.directory))]
 
 
 def csv_inventory(collated_records):
