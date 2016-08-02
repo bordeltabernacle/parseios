@@ -35,6 +35,10 @@ class Host:
     def __init__(self, show_file):
         self._source_file = show_file
 
+    def __str__(self):
+        return "{0}\n{1}".format(self.hostname(),
+                "\n".join("\t".join(d) for d in self.devices()))
+
     def _build_regex(self, regex):
         return re.compile(regex, re.IGNORECASE)
 
@@ -163,16 +167,6 @@ class Host:
     def facts(self):
         Host = namedtuple("Host", "hostname device_count devices")
         return Host(self.hostname(), self.device_count(), self.devices())
-
-    def __str__(self):
-        s = self.hostname()
-        for i in range(self.device_count()):
-            s += "\n{0}\t{1}\t{2}\t{3}".format(
-                    self.devices()[i].serial_number,
-                    self.devices()[i].model_number,
-                    self.devices()[i].software_version,
-                    self.devices()[i].software_image)
-        return s
 
 
 def collate(directory):
