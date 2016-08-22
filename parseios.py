@@ -33,14 +33,14 @@ from collections import namedtuple
 DEVICE_FIELDS = "serial_number model_number software_version software_image"
 
 
-class Host:
+class Host(object):
 
     def __init__(self, show_file):
         self._source_file = show_file
 
     def __str__(self):
-        return "{0}\n{1}".format(self.hostname(),
-                "\n".join("\t".join(d) for d in self.devices()))
+        return "{0}\n{1}".format(
+            self.hostname(), "\n".join("\t".join(d) for d in self.devices()))
 
     def _build_regex(self, regex):
         return re.compile(regex, re.IGNORECASE)
@@ -74,8 +74,8 @@ class Host:
         return self._source_file
 
     def device_count(self):
-        interface_slots = re.findall(self._regexes()["interface"],
-                self._content())
+        interface_slots = re.findall(
+            self._regexes()["interface"], self._content())
         inv_names = re.findall(self._regexes()["inv_name"], self._content())
         if interface_slots:
             return int(max(interface_slots)) + 1
@@ -118,8 +118,8 @@ class Host:
                 # Don't use a set, as we need to keep the order the serial
                 # numbers are found in so we can accurately match them to
                 # the correct device if there is a switch stack
-                [sn_list.append(m.group("serial_number")) for m in match if
-                        m.group("serial_number") not in sn_list]
+                sn = "serial_number"
+                [sn_list.append(m.group(sn)) for m in match if m.group(sn) not in sn_list]
                 return sn_list
         return None
 
@@ -171,7 +171,7 @@ class Host:
         return Host(self.hostname(), self.device_count(), self.devices())
 
 
-class Inventory:
+class Inventory(object):
 
     def __init__(self, directory):
         self.directory = directory
@@ -196,6 +196,7 @@ class Inventory:
 def json_inventory(collated_records):
     dict_records = [__named_tuple_to_dict(record) for record in collated_records]
     return json.dumps(dict_records)
+
 
 # private function to transform a named tuple into a dictionary
 def __named_tuple_to_dict(nt):
@@ -275,6 +276,8 @@ def ascii_table_inventory(collated_records):
     return output
 
 # private function to work out the max width of each table column
+
+
 def __width_of_column(collated_records, column, init_length):
     for entry in collated_records:
         col_length = len(getattr(entry, column))
